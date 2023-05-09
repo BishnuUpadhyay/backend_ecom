@@ -1,16 +1,28 @@
 const catchAsyncErrors = require('../middleware/catchsyncerror');
-const errorhandler = require('./error');
+const ErrorHander = require('../utils/errorhandler')
 const jwt = require('jsonwebtoken')
-const User = require('../models/usermodel')
+const User = require('../models/usermodel');
 
-const isAuthenticatedUser = catchAsyncErrors( async (req,res,next)=>{
-    const {token }= req.cookies;
- 
-    if(!token){
-        return next(new errorhandler("please login to access this resourcde",401));
+const isAuthenticatedUser = catchAsyncErrors(async (req, res, next) => {
+    const { token } = req.cookies;
+    if (!token) {
+        return next(new ErrorHander("please login to access this resourcde", 401));
     }
-const decodedDate = jwt.verify(token,process.env.JWT_SECRET);
-req.user =await User.findById(decodedDate.id)
-next()
+    const decodedData = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decodedData.id)
+    next()
 })
-module.exports = isAuthenticatedUser
+const authorizedRoles = (...roles) => {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+      return next(     new ErrorHander
+                (`Role:${req.user.role} is not allow to access this role`,403)
+                )  
+        }
+    
+        next();
+    }
+}
+module.exports = { isAuthenticatedUser,authorizedRoles}
+
+
